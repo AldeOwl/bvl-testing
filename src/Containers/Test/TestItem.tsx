@@ -18,13 +18,11 @@ interface QuestionType {
 }
 
 type TestProps = {
-  loadingHandler: (loading: boolean) => void
-  handleAnswer: (questionId: number, answers: Array<string>) => void
-  handleTestEndded: () => void
+  handleAnswer: (questionId: number, answers: Array<string>, isTestFinished: boolean) => void
 }
 
 const TestItem: FC<TestProps> = (props) => {
-  const {loadingHandler, handleAnswer, handleTestEndded} = props
+  const {handleAnswer} = props
 
   const [questions, setQuestions] = useState<QuestionType[]>([])
   const [target, setTarget] = useState<number>(0)
@@ -75,15 +73,16 @@ const TestItem: FC<TestProps> = (props) => {
     (arr: Array<string>) => {
       const newTarget = target + 1
 
-      handleAnswer(questions[target].id, arr)
-      setTarget(newTarget)
+      const isTestFinished = newTarget === questions.length
 
-      if (newTarget === questions.length) {
-        loadingHandler(true)
-        handleTestEndded()
+      handleAnswer(questions[target].id, arr, isTestFinished)
+
+      if (!isTestFinished) {
+        setTarget(newTarget)
       }
+
     },
-    [handleAnswer, handleTestEndded, loadingHandler, questions, target]
+    [handleAnswer, questions, target]
   )
 
   if (isTestLoading) {

@@ -32,6 +32,7 @@ const TestWrap: React.FC<TestWrapProps> = ({name, authorization}) => {
   const [answers, setAnswers] = useState<Record<string, string[] | number>>({})
   const [startTestTime, setStartTestTime] = useState<number>(0)
   const [endTestTime, setEndTestTime] = useState<number>(0)
+  const [isTestFinished, setIsTestFinished] = useState(false)
 
   if (!authorization) {
     window.location.hash = '/'
@@ -54,8 +55,6 @@ const TestWrap: React.FC<TestWrapProps> = ({name, authorization}) => {
 
   const saveTest = useCallback(() => {
     if (!endTestTime) {
-      const testTimeMilissecond = new Date().getMilliseconds()
-      console.log('testTimeMilissecond', testTimeMilissecond)
       setEndTestTime(Date.now())
     }
 
@@ -65,6 +64,7 @@ const TestWrap: React.FC<TestWrapProps> = ({name, authorization}) => {
     const currentAnswers = {...answers, test_time: testTime, end_test_time: currentEndTestTime}
 
     setSaveTestError(false)
+    console.log('currentAnswers', currentAnswers, Object.keys(currentAnswers).length)
     sendTestResult(currentAnswers)
       .then((res) => {
         if (!res.id) {
@@ -90,21 +90,26 @@ const TestWrap: React.FC<TestWrapProps> = ({name, authorization}) => {
     saveTest()
   }, [answers, saveTest])
 
-  const loadingHandler = useCallback(
-    (status: boolean) => {
-      setIsLoading(status)
-    },
-    [setIsLoading]
-  )
 
   const handleAnswers = useCallback(
-    (questionId: number, answer: Array<string>) => {
+    (questionId: number, answer: Array<string>, isTestFinished: boolean) => {
       const newAnswers = {...answers}
       newAnswers[questionId] = [...answer]
       setAnswers(newAnswers)
+
+      if (isTestFinished) {
+        setIsTestFinished(true)
+      }
     },
     [answers]
   )
+
+  useEffect(() => {
+    if (isTestFinished) {
+      setIsLoading(true)
+      saveTest()
+    }
+  }, [isTestFinished, saveTest])
 
   if (saveTestError) {
     return <SaveTestError testError={testError} handleSaveButton={handleSaveButton} />
@@ -118,7 +123,7 @@ const TestWrap: React.FC<TestWrapProps> = ({name, authorization}) => {
     <Wrap>
       {step === 'intro' && <Introduction name={name} setStep={setStep} />}
       {step === 'test' && (
-        <TestItem loadingHandler={loadingHandler} handleAnswer={handleAnswers} handleTestEndded={saveTest} />
+        <TestItem  handleAnswer={handleAnswers} />
       )}
       {step === 'report' && <FinalReport result={result} />}
     </Wrap>
